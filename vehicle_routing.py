@@ -70,6 +70,39 @@ class VRPPD:
         ]
 
 
+class Cost:
+    def __init__(self, cities, distance_func):
+        self.cities = cities
+        self.distance = distance_func
+
+    def route_cost(self, route):
+        depot, *cities = self.cities
+        route_cost_sum = 0
+        current_city = depot
+
+        for node in route:
+            start_index, end_index, inner_cost = node
+            start = cities[start_index]
+            end = cities[end_index]
+
+            route_cost_sum += self.distance(current_city, start)
+            route_cost_sum += inner_cost
+
+            current_city = end
+
+        route_cost_sum += self.distance(current_city, depot)
+        return route_cost_sum
+
+    def total_cost(self, routes):
+        return sum(
+            self.route_cost(route)
+            for route in routes
+        )
+
+    def is_better(self, routes1, routes2):
+        return self.total_cost(routes1) < self.total_cost(routes2)
+
+
 def generate_routes(delivery_nodes, num_of_vehicles):
     routes = []
 
@@ -77,32 +110,6 @@ def generate_routes(delivery_nodes, num_of_vehicles):
         routes.append(delivery_nodes[i::num_of_vehicles])
 
     return routes
-
-
-def route_cost(cities, route, distance_func):
-    depot, *other_cities = cities
-    route_cost_sum = 0
-    current_city = depot
-
-    for node in route:
-        start_index, end_index, inner_cost = node
-        start = other_cities[start_index]
-        end = other_cities[end_index]
-
-        route_cost_sum += distance_func(current_city, start)
-        route_cost_sum += inner_cost
-
-        current_city = end
-
-    route_cost_sum += distance_func(current_city, depot)
-    return route_cost_sum
-
-
-def total_cost(cities, routes, distance_func):
-    return sum(
-        route_cost(cities, route, distance_func)
-        for route in routes
-    )
 
 
 def city_2_opt(route):
@@ -126,9 +133,3 @@ def route_2_opt(routes):
     route1[index1], route2[index2] = route2[index2], route1[index1]
 
     return routes
-
-
-def is_better(cities, distance_func, routes1, routes2):
-    cost1 = total_cost(cities, routes1, distance_func)
-    cost2 = total_cost(cities, routes2, distance_func)
-    return cost1 < cost2
